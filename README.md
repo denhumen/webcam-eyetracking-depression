@@ -1,1 +1,1 @@
-# bachelor_thesis_data_exploration
+# Investigating dynamics of eye-tracking attention indicators for depression assessment

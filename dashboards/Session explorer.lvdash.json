@@ -1,0 +1,2150 @@
+{
+  "datasets": [
+    {
+      "name": "0f183c45",
+      "displayName": "session_list",
+      "queryLines": [
+        "SELECT \r\n",
+        "  f.session_id,\r\n",
+        "  f.uid,\r\n",
+        "  f.phq9_score,\r\n",
+        "  f.phq9_severity,\r\n",
+        "  f.bdi_score,\r\n",
+        "  f.bdi_severity,\r\n",
+        "  f.createdAt,\r\n",
+        "  s.test_version\r\n",
+        "FROM anima.forms f\r\n",
+        "JOIN anima.sessions s ON f.session_id = s.session_id\r\n",
+        "ORDER BY f.createdAt DESC"
+      ]
+    },
+    {
+      "name": "e5884019",
+      "displayName": "session_detail",
+      "queryLines": [
+        "SELECT \r\n",
+        "  sm.*,\r\n",
+        "  f.phq9_score,\r\n",
+        "  f.bdi_score,\r\n",
+        "  f.phq9_severity\r\n",
+        "FROM anima.scene_metrics sm\r\n",
+        "JOIN anima.forms f ON sm.session_id = f.session_id\r\n",
+        "WHERE sm.session_id = :selected_session\r\n",
+        "  AND sm.scene_type = 'stimulus'\r\n",
+        "ORDER BY sm.scene_index"
+      ],
+      "parameters": [
+        {
+          "displayName": "selected_session",
+          "keyword": "selected_session",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "49e9bce6",
+      "displayName": "session_summary",
+      "queryLines": [
+        "SELECT\r\n",
+        "  session_id,\r\n",
+        "  AVG(fixation_count) as avg_fixation_count,\r\n",
+        "  AVG(mean_fixation_duration_ms) as avg_fixation_duration,\r\n",
+        "  AVG(dwell_time_ms_negative) as avg_dwell_negative,\r\n",
+        "  AVG(dwell_time_ms_positive) as avg_dwell_positive,\r\n",
+        "  AVG(dwell_time_ms_neutral) as avg_dwell_neutral,\r\n",
+        "  AVG(fixation_proportion_negative) as avg_prop_negative,\r\n",
+        "  AVG(fixation_proportion_positive) as avg_prop_positive,\r\n",
+        "  AVG(scanpath_length) as avg_scanpath_length,\r\n",
+        "  AVG(gaze_transition_entropy) as avg_entropy,\r\n",
+        "  AVG(blink_rate_per_min) as avg_blink_rate,\r\n",
+        "  COUNT(*) as n_stimulus_scenes\r\n",
+        "FROM anima.scene_metrics\r\n",
+        "WHERE session_id = :selected_session\r\n",
+        "  AND scene_type = 'stimulus'\r\n",
+        "GROUP BY session_id"
+      ],
+      "parameters": [
+        {
+          "displayName": "selected_session",
+          "keyword": "selected_session",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05aac086",
+      "displayName": "user_sessions",
+      "queryLines": [
+        "SELECT \r\n",
+        "  f.session_id,\r\n",
+        "  f.createdAt,\r\n",
+        "  f.phq9_score,\r\n",
+        "  f.bdi_score,\r\n",
+        "  CONCAT(f.createdAt, ' | PHQ-9=', f.phq9_score, ' BDI=', f.bdi_score, ' | ', f.session_id) as session_label\r\n",
+        "FROM anima.forms f\r\n",
+        "JOIN anima.sessions s ON f.session_id = s.session_id\r\n",
+        "WHERE f.uid = :selected_user\r\n",
+        "ORDER BY f.createdAt ASC"
+      ],
+      "parameters": [
+        {
+          "displayName": "selected_user",
+          "keyword": "selected_user",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "d8ae8260",
+      "displayName": "valence_dwell",
+      "queryLines": [
+        "SELECT 'Negative' as valence, AVG(dwell_time_ms_negative) as dwell_time_ms\r\n",
+        "FROM anima.scene_metrics\r\n",
+        "WHERE session_id = :selected_session AND scene_type = 'stimulus'\r\n",
+        "UNION ALL\r\n",
+        "SELECT 'Positive', AVG(dwell_time_ms_positive)\r\n",
+        "FROM anima.scene_metrics\r\n",
+        "WHERE session_id = :selected_session AND scene_type = 'stimulus'\r\n",
+        "UNION ALL\r\n",
+        "SELECT 'Neutral', AVG(dwell_time_ms_neutral)\r\n",
+        "FROM anima.scene_metrics\r\n",
+        "WHERE session_id = :selected_session AND scene_type = 'stimulus'"
+      ],
+      "parameters": [
+        {
+          "displayName": "selected_session",
+          "keyword": "selected_session",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06453800",
+      "displayName": "all_user_sessions",
+      "queryLines": [
+        "SELECT \r\n",
+        "  f.session_id,\r\n",
+        "  f.createdAt,\r\n",
+        "  f.phq9_score,\r\n",
+        "  f.bdi_score,\r\n",
+        "  CONCAT(f.createdAt, ' | PHQ-9=', f.phq9_score, ' BDI=', f.bdi_score, ' | ', f.session_id) as session_label\r\n",
+        "FROM anima.forms f\r\n",
+        "JOIN anima.sessions s ON f.session_id = s.session_id\r\n",
+        "WHERE f.uid = :selected_user\r\n",
+        "ORDER BY f.createdAt ASC"
+      ],
+      "parameters": [
+        {
+          "displayName": "selected_user",
+          "keyword": "selected_user",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "be65bf0d",
+      "displayName": "population_valence_dwell",
+      "queryLines": [
+        "SELECT \r\n",
+        "  'Negative' as valence, \r\n",
+        "  AVG(dwell_time_ms_negative) as avg_dwell_ms,\r\n",
+        "  AVG(fixation_proportion_negative) as avg_fix_proportion,\r\n",
+        "  AVG(fixation_count_negative) as avg_fix_count\r\n",
+        "FROM anima.scene_metrics\r\n",
+        "WHERE scene_type = 'stimulus'\r\n",
+        "UNION ALL\r\n",
+        "SELECT 'Positive', AVG(dwell_time_ms_positive), AVG(fixation_proportion_positive), AVG(fixation_count_positive)\r\n",
+        "FROM anima.scene_metrics WHERE scene_type = 'stimulus'\r\n",
+        "UNION ALL\r\n",
+        "SELECT 'Neutral', AVG(dwell_time_ms_neutral), AVG(fixation_proportion_neutral), AVG(fixation_count_neutral)\r\n",
+        "FROM anima.scene_metrics WHERE scene_type = 'stimulus'"
+      ]
+    },
+    {
+      "name": "93f61fe3",
+      "displayName": "session_vs_population",
+      "queryLines": [
+        "WITH session_data AS (\r\n",
+        "  SELECT\r\n",
+        "    AVG(fixation_count) as fixation_count,\r\n",
+        "    AVG(mean_fixation_duration_ms) as fixation_duration_ms,\r\n",
+        "    AVG(total_fixation_duration_ms) as total_fixation_duration_ms,\r\n",
+        "    AVG(fixation_rate_per_sec) as fixation_rate,\r\n",
+        "    AVG(scanpath_length) as scanpath_length,\r\n",
+        "    AVG(saccade_count) as saccade_count,\r\n",
+        "    AVG(saccade_rate_per_sec) as saccade_rate,\r\n",
+        "    AVG(mean_saccade_amplitude) as saccade_amplitude,\r\n",
+        "    AVG(blink_count) as blink_count,\r\n",
+        "    AVG(blink_rate_per_min) as blink_rate,\r\n",
+        "    AVG(transition_matrix_density) as transition_density,\r\n",
+        "    AVG(gaze_transition_entropy) as gaze_entropy,\r\n",
+        "    AVG(dwell_time_ms_negative) as dwell_negative,\r\n",
+        "    AVG(dwell_time_ms_positive) as dwell_positive,\r\n",
+        "    AVG(dwell_time_ms_neutral) as dwell_neutral,\r\n",
+        "    AVG(fixation_proportion_negative) as prop_negative,\r\n",
+        "    AVG(fixation_proportion_positive) as prop_positive,\r\n",
+        "    AVG(fixation_proportion_neutral) as prop_neutral,\r\n",
+        "    AVG(fixation_count_negative) as fix_count_negative,\r\n",
+        "    AVG(fixation_count_positive) as fix_count_positive,\r\n",
+        "    AVG(fixation_count_neutral) as fix_count_neutral,\r\n",
+        "    AVG(revisit_count_negative) as revisit_negative,\r\n",
+        "    AVG(revisit_count_positive) as revisit_positive,\r\n",
+        "    AVG(revisit_count_neutral) as revisit_neutral,\r\n",
+        "    AVG(ttff_ms_negative) as ttff_negative,\r\n",
+        "    AVG(ttff_ms_positive) as ttff_positive,\r\n",
+        "    AVG(ttff_ms_neutral) as ttff_neutral\r\n",
+        "  FROM anima.scene_metrics\r\n",
+        "  WHERE session_id = :selected_session AND scene_type = 'stimulus'\r\n",
+        "),\r\n",
+        "population_data AS (\r\n",
+        "  SELECT\r\n",
+        "    AVG(sm.fixation_count) as fixation_count,\r\n",
+        "    AVG(sm.mean_fixation_duration_ms) as fixation_duration_ms,\r\n",
+        "    AVG(sm.total_fixation_duration_ms) as total_fixation_duration_ms,\r\n",
+        "    AVG(sm.fixation_rate_per_sec) as fixation_rate,\r\n",
+        "    AVG(sm.scanpath_length) as scanpath_length,\r\n",
+        "    AVG(sm.saccade_count) as saccade_count,\r\n",
+        "    AVG(sm.saccade_rate_per_sec) as saccade_rate,\r\n",
+        "    AVG(sm.mean_saccade_amplitude) as saccade_amplitude,\r\n",
+        "    AVG(sm.blink_count) as blink_count,\r\n",
+        "    AVG(sm.blink_rate_per_min) as blink_rate,\r\n",
+        "    AVG(sm.transition_matrix_density) as transition_density,\r\n",
+        "    AVG(sm.gaze_transition_entropy) as gaze_entropy,\r\n",
+        "    AVG(sm.dwell_time_ms_negative) as dwell_negative,\r\n",
+        "    AVG(sm.dwell_time_ms_positive) as dwell_positive,\r\n",
+        "    AVG(sm.dwell_time_ms_neutral) as dwell_neutral,\r\n",
+        "    AVG(sm.fixation_proportion_negative) as prop_negative,\r\n",
+        "    AVG(sm.fixation_proportion_positive) as prop_positive,\r\n",
+        "    AVG(sm.fixation_proportion_neutral) as prop_neutral,\r\n",
+        "    AVG(sm.fixation_count_negative) as fix_count_negative,\r\n",
+        "    AVG(sm.fixation_count_positive) as fix_count_positive,\r\n",
+        "    AVG(sm.fixation_count_neutral) as fix_count_neutral,\r\n",
+        "    AVG(sm.revisit_count_negative) as revisit_negative,\r\n",
+        "    AVG(sm.revisit_count_positive) as revisit_positive,\r\n",
+        "    AVG(sm.revisit_count_neutral) as revisit_neutral,\r\n",
+        "    AVG(sm.ttff_ms_negative) as ttff_negative,\r\n",
+        "    AVG(sm.ttff_ms_positive) as ttff_positive,\r\n",
+        "    AVG(sm.ttff_ms_neutral) as ttff_neutral\r\n",
+        "  FROM anima.scene_metrics sm\r\n",
+        "  JOIN anima.forms f ON sm.session_id = f.session_id\r\n",
+        "  WHERE sm.scene_type = 'stimulus'\r\n",
+        "    AND (f.phq9_severity = :severity_filter OR :severity_filter = 'all')\r\n",
+        ")\r\n",
+        "SELECT 'Fixation Count' as metric, s.fixation_count as this_session, p.fixation_count as severity_group_avg FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Fixation Duration (ms)', s.fixation_duration_ms, p.fixation_duration_ms FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Total Fixation Duration (ms)', s.total_fixation_duration_ms, p.total_fixation_duration_ms FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Fixation Rate (/sec)', s.fixation_rate, p.fixation_rate FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Scanpath Length', s.scanpath_length, p.scanpath_length FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Saccade Count', s.saccade_count, p.saccade_count FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Saccade Rate (/sec)', s.saccade_rate, p.saccade_rate FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Saccade Amplitude', s.saccade_amplitude, p.saccade_amplitude FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Blink Count', s.blink_count, p.blink_count FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Blink Rate (/min)', s.blink_rate, p.blink_rate FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Transition Density', s.transition_density, p.transition_density FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Gaze Entropy', s.gaze_entropy, p.gaze_entropy FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Dwell Time Negative (ms)', s.dwell_negative, p.dwell_negative FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Dwell Time Positive (ms)', s.dwell_positive, p.dwell_positive FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Dwell Time Neutral (ms)', s.dwell_neutral, p.dwell_neutral FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Fix Proportion Negative', s.prop_negative, p.prop_negative FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Fix Proportion Positive', s.prop_positive, p.prop_positive FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Fix Proportion Neutral', s.prop_neutral, p.prop_neutral FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Fix Count Negative', s.fix_count_negative, p.fix_count_negative FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Fix Count Positive', s.fix_count_positive, p.fix_count_positive FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Fix Count Neutral', s.fix_count_neutral, p.fix_count_neutral FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Revisit Count Negative', s.revisit_negative, p.revisit_negative FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Revisit Count Positive', s.revisit_positive, p.revisit_positive FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'Revisit Count Neutral', s.revisit_neutral, p.revisit_neutral FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'TTFF Negative (ms)', s.ttff_negative, p.ttff_negative FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'TTFF Positive (ms)', s.ttff_positive, p.ttff_positive FROM session_data s, population_data p\r\n",
+        "UNION ALL SELECT 'TTFF Neutral (ms)', s.ttff_neutral, p.ttff_neutral FROM session_data s, population_data p"
+      ],
+      "parameters": [
+        {
+          "displayName": "selected_session",
+          "keyword": "selected_session",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "displayName": "severity_filter",
+          "keyword": "severity_filter",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5d74436a",
+      "displayName": "valence_proportion",
+      "queryLines": [
+        "SELECT 'Negative' as valence, AVG(fixation_proportion_negative) as fix_proportion\r\n",
+        "FROM anima.scene_metrics\r\n",
+        "WHERE session_id = :selected_session AND scene_type = 'stimulus'\r\n",
+        "UNION ALL\r\n",
+        "SELECT 'Positive', AVG(fixation_proportion_positive)\r\n",
+        "FROM anima.scene_metrics\r\n",
+        "WHERE session_id = :selected_session AND scene_type = 'stimulus'\r\n",
+        "UNION ALL\r\n",
+        "SELECT 'Neutral', AVG(fixation_proportion_neutral)\r\n",
+        "FROM anima.scene_metrics\r\n",
+        "WHERE session_id = :selected_session AND scene_type = 'stimulus'"
+      ],
+      "parameters": [
+        {
+          "displayName": "selected_session",
+          "keyword": "selected_session",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "f3b8b930",
+      "displayName": "severity_comparison",
+      "queryLines": [
+        "SELECT\r\n",
+        "  f.phq9_severity as severity,\r\n",
+        "  COUNT(DISTINCT sm.session_id) as n_sessions,\r\n",
+        "  AVG(sm.fixation_count) as avg_fixation_count,\r\n",
+        "  AVG(sm.mean_fixation_duration_ms) as avg_fixation_duration,\r\n",
+        "  AVG(sm.fixation_rate_per_sec) as avg_fixation_rate,\r\n",
+        "  AVG(sm.scanpath_length) as avg_scanpath_length,\r\n",
+        "  AVG(sm.saccade_count) as avg_saccade_count,\r\n",
+        "  AVG(sm.blink_rate_per_min) as avg_blink_rate,\r\n",
+        "  AVG(sm.gaze_transition_entropy) as avg_gaze_entropy,\r\n",
+        "  AVG(sm.dwell_time_ms_negative) as avg_dwell_negative,\r\n",
+        "  AVG(sm.dwell_time_ms_positive) as avg_dwell_positive,\r\n",
+        "  AVG(sm.dwell_time_ms_neutral) as avg_dwell_neutral,\r\n",
+        "  AVG(sm.fixation_proportion_negative) as avg_prop_negative,\r\n",
+        "  AVG(sm.fixation_proportion_positive) as avg_prop_positive,\r\n",
+        "  AVG(sm.fixation_proportion_neutral) as avg_prop_neutral\r\n",
+        "FROM anima.scene_metrics sm\r\n",
+        "JOIN anima.forms f ON sm.session_id = f.session_id\r\n",
+        "WHERE sm.scene_type = 'stimulus'\r\n",
+        "GROUP BY f.phq9_severity\r\n",
+        "ORDER BY \r\n",
+        "  CASE f.phq9_severity\r\n",
+        "    WHEN 'minimal' THEN 1\r\n",
+        "    WHEN 'mild' THEN 2\r\n",
+        "    WHEN 'moderate' THEN 3\r\n",
+        "    WHEN 'moderately_severe' THEN 4\r\n",
+        "    WHEN 'severe' THEN 5\r\n",
+        "  END"
+      ]
+    },
+    {
+      "name": "002181d6",
+      "displayName": "scene_timeline",
+      "queryLines": [
+        "SELECT\r\n",
+        "  scene_index,\r\n",
+        "  (scene_index + 1) / 2 as trial_number,\r\n",
+        "  scene_valence_pair,\r\n",
+        "  fixation_count,\r\n",
+        "  mean_fixation_duration_ms,\r\n",
+        "  dwell_time_ms_negative,\r\n",
+        "  dwell_time_ms_positive,\r\n",
+        "  dwell_time_ms_neutral,\r\n",
+        "  fixation_proportion_negative,\r\n",
+        "  fixation_proportion_positive,\r\n",
+        "  scanpath_length,\r\n",
+        "  saccade_count,\r\n",
+        "  blink_count,\r\n",
+        "  gaze_transition_entropy,\r\n",
+        "  first_fixation_valence\r\n",
+        "FROM anima.scene_metrics\r\n",
+        "WHERE session_id = :selected_session\r\n",
+        "  AND scene_type = 'stimulus'\r\n",
+        "ORDER BY scene_index"
+      ],
+      "parameters": [
+        {
+          "displayName": "selected_session",
+          "keyword": "selected_session",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "c90b3aef",
+      "displayName": "General",
+      "layout": [
+        {
+          "widget": {
+            "name": "user-sessions-table-1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "06453800",
+                  "fields": [
+                    {
+                      "name": "session_id",
+                      "expression": "`session_id`"
+                    },
+                    {
+                      "name": "session_label",
+                      "expression": "`session_label`"
+                    },
+                    {
+                      "name": "minutely(createdAt)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `createdAt`)"
+                    },
+                    {
+                      "name": "phq9_score",
+                      "expression": "`phq9_score`"
+                    },
+                    {
+                      "name": "bdi_score",
+                      "expression": "`bdi_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "User sessions table"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "session_id",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "session_label"
+                  },
+                  {
+                    "fieldName": "minutely(createdAt)",
+                    "useForSearch": false
+                  },
+                  {
+                    "fieldName": "phq9_score"
+                  },
+                  {
+                    "fieldName": "bdi_score"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 12,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "session-info",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "05aac086",
+                  "fields": [
+                    {
+                      "name": "minutely(createdAt)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `createdAt`)"
+                    },
+                    {
+                      "name": "avg(bdi_score)",
+                      "expression": "AVG(`bdi_score`)"
+                    },
+                    {
+                      "name": "avg(phq9_score)",
+                      "expression": "AVG(`phq9_score`)"
+                    }
+                  ],
+                  "parameterValues": [
+                    {
+                      "keyword": "selected_user",
+                      "selection": {}
+                    }
+                  ],
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "DESC",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `createdAt`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Selected session"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "avg(phq9_score)"
+                },
+                "target": {
+                  "fieldName": "avg(bdi_score)",
+                  "period": {
+                    "type": "relative-to-value-period",
+                    "offset": 0
+                  }
+                },
+                "period": {
+                  "fieldName": "minutely(createdAt)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "severity-group-comparison",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f3b8b930",
+                  "fields": [
+                    {
+                      "name": "severity",
+                      "expression": "`severity`"
+                    },
+                    {
+                      "name": "avg_dwell_neutral",
+                      "expression": "`avg_dwell_neutral`"
+                    },
+                    {
+                      "name": "avg_dwell_positive",
+                      "expression": "`avg_dwell_positive`"
+                    },
+                    {
+                      "name": "avg_dwell_negative",
+                      "expression": "`avg_dwell_negative`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Dwell Time by Severity Group"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ],
+                "layout": "group"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "severity",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "fields": [
+                    {
+                      "fieldName": "avg_dwell_neutral"
+                    },
+                    {
+                      "fieldName": "avg_dwell_positive"
+                    },
+                    {
+                      "fieldName": "avg_dwell_negative"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "fixation-proportion-severity",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f3b8b930",
+                  "fields": [
+                    {
+                      "name": "severity",
+                      "expression": "`severity`"
+                    },
+                    {
+                      "name": "avg_prop_negative",
+                      "expression": "`avg_prop_negative`"
+                    },
+                    {
+                      "name": "avg_prop_neutral",
+                      "expression": "`avg_prop_neutral`"
+                    },
+                    {
+                      "name": "avg_prop_positive",
+                      "expression": "`avg_prop_positive`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Fixation Proportion by Severity Group"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ],
+                "layout": "group"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "severity",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "fields": [
+                    {
+                      "fieldName": "avg_prop_negative"
+                    },
+                    {
+                      "fieldName": "avg_prop_neutral"
+                    },
+                    {
+                      "fieldName": "avg_prop_positive"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 25,
+            "width": 12,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "sessions-per-severity-group",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f3b8b930",
+                  "fields": [
+                    {
+                      "name": "severity",
+                      "expression": "`severity`"
+                    },
+                    {
+                      "name": "sum(n_sessions)",
+                      "expression": "SUM(`n_sessions`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Sessions per Severity Group"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "severity",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(n_sessions)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "severity",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "severe",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 4
+                        }
+                      },
+                      {
+                        "value": "moderately_severe",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 6
+                        }
+                      },
+                      {
+                        "value": "moderate",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 10
+                        }
+                      },
+                      {
+                        "value": "mild",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 5
+                        }
+                      },
+                      {
+                        "value": "minimal",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 8
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "f510c2f1",
+      "displayName": "Session Metrics Summary",
+      "layout": [
+        {
+          "widget": {
+            "name": "dwell-time-by-valence",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "d8ae8260",
+                  "fields": [
+                    {
+                      "name": "valence",
+                      "expression": "`valence`"
+                    },
+                    {
+                      "name": "dwell_time_ms",
+                      "expression": "`dwell_time_ms`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Dwell time by valence"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "valence",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "dwell_time_ms",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "valence",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "session-vs-population",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "93f61fe3",
+                  "fields": [
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    },
+                    {
+                      "name": "this_session",
+                      "expression": "`this_session`"
+                    },
+                    {
+                      "name": "severity_group_avg",
+                      "expression": "`severity_group_avg`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Session vs population"
+              },
+              "mark": {
+                "layout": "group"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "metric",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "scale": {
+                    "type": "quantitative",
+                    "fn": {
+                      "type": "symlog"
+                    }
+                  },
+                  "fields": [
+                    {
+                      "fieldName": "this_session"
+                    },
+                    {
+                      "fieldName": "severity_group_avg"
+                    }
+                  ]
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 10
+          }
+        },
+        {
+          "widget": {
+            "name": "general-metrics",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "49e9bce6",
+                  "fields": [
+                    {
+                      "name": "session_id",
+                      "expression": "`session_id`"
+                    },
+                    {
+                      "name": "avg_fixation_count",
+                      "expression": "`avg_fixation_count`"
+                    },
+                    {
+                      "name": "avg_fixation_duration",
+                      "expression": "`avg_fixation_duration`"
+                    },
+                    {
+                      "name": "avg_dwell_negative",
+                      "expression": "`avg_dwell_negative`"
+                    },
+                    {
+                      "name": "avg_dwell_positive",
+                      "expression": "`avg_dwell_positive`"
+                    },
+                    {
+                      "name": "avg_dwell_neutral",
+                      "expression": "`avg_dwell_neutral`"
+                    },
+                    {
+                      "name": "avg_prop_negative",
+                      "expression": "`avg_prop_negative`"
+                    },
+                    {
+                      "name": "avg_prop_positive",
+                      "expression": "`avg_prop_positive`"
+                    },
+                    {
+                      "name": "avg_scanpath_length",
+                      "expression": "`avg_scanpath_length`"
+                    },
+                    {
+                      "name": "avg_entropy",
+                      "expression": "`avg_entropy`"
+                    },
+                    {
+                      "name": "avg_blink_rate",
+                      "expression": "`avg_blink_rate`"
+                    },
+                    {
+                      "name": "n_stimulus_scenes",
+                      "expression": "`n_stimulus_scenes`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "General metrics"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "session_id"
+                  },
+                  {
+                    "fieldName": "avg_fixation_count"
+                  },
+                  {
+                    "fieldName": "avg_fixation_duration"
+                  },
+                  {
+                    "fieldName": "avg_dwell_negative"
+                  },
+                  {
+                    "fieldName": "avg_dwell_positive"
+                  },
+                  {
+                    "fieldName": "avg_dwell_neutral"
+                  },
+                  {
+                    "fieldName": "avg_prop_negative"
+                  },
+                  {
+                    "fieldName": "avg_prop_positive"
+                  },
+                  {
+                    "fieldName": "avg_scanpath_length"
+                  },
+                  {
+                    "fieldName": "avg_entropy"
+                  },
+                  {
+                    "fieldName": "avg_blink_rate"
+                  },
+                  {
+                    "fieldName": "n_stimulus_scenes"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 16,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "fixation-proportion-by-valence",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "5d74436a",
+                  "fields": [
+                    {
+                      "name": "valence",
+                      "expression": "`valence`"
+                    },
+                    {
+                      "name": "sum(fix_proportion)",
+                      "expression": "SUM(`fix_proportion`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Fixation proportion by valence"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "valence",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(fix_proportion)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "valence",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "ea63358f",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "223d3011",
+            "queries": [
+              {
+                "name": "dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12482eee419058991d405ada25188_phq9_severity",
+                "query": {
+                  "datasetName": "0f183c45",
+                  "fields": [
+                    {
+                      "name": "phq9_severity",
+                      "expression": "`phq9_severity`"
+                    },
+                    {
+                      "name": "phq9_severity_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f126064c8013fcb5968cd0818d3a6e_severity_filter",
+                "query": {
+                  "datasetName": "93f61fe3",
+                  "parameters": [
+                    {
+                      "name": "severity_filter",
+                      "keyword": "severity_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Severnity",
+                "headerAlignment": "left"
+              },
+              "scale": {
+                "type": "categorical",
+                "sort": {
+                  "by": "natural-order"
+                }
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "phq9_severity",
+                    "queryName": "dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12482eee419058991d405ada25188_phq9_severity"
+                  },
+                  {
+                    "parameterName": "severity_filter",
+                    "queryName": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f126064c8013fcb5968cd0818d3a6e_severity_filter"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "f3ae5f26",
+            "queries": [
+              {
+                "name": "dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12482eee419058991d405ada25188_uid",
+                "query": {
+                  "datasetName": "0f183c45",
+                  "fields": [
+                    {
+                      "name": "uid",
+                      "expression": "`uid`"
+                    },
+                    {
+                      "name": "uid_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f1248cca1b1cdb8f32e18288d621d5_selected_user",
+                "query": {
+                  "datasetName": "05aac086",
+                  "parameters": [
+                    {
+                      "name": "selected_user",
+                      "keyword": "selected_user"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12605a4131ddb9aa2ac42e98adad8_selected_user",
+                "query": {
+                  "datasetName": "06453800",
+                  "parameters": [
+                    {
+                      "name": "selected_user",
+                      "keyword": "selected_user"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "User"
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "uid",
+                    "queryName": "dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12482eee419058991d405ada25188_uid"
+                  },
+                  {
+                    "parameterName": "selected_user",
+                    "queryName": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f1248cca1b1cdb8f32e18288d621d5_selected_user"
+                  },
+                  {
+                    "parameterName": "selected_user",
+                    "queryName": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12605a4131ddb9aa2ac42e98adad8_selected_user"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "3067807a",
+            "queries": [
+              {
+                "name": "dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f1248cca1b1cdb8f32e18288d621d5_session_id",
+                "query": {
+                  "datasetName": "05aac086",
+                  "fields": [
+                    {
+                      "name": "session_id",
+                      "expression": "`session_id`"
+                    },
+                    {
+                      "name": "session_id_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f124831a2e1d3eaa46ea05f61817bb_selected_session",
+                "query": {
+                  "datasetName": "e5884019",
+                  "parameters": [
+                    {
+                      "name": "selected_session",
+                      "keyword": "selected_session"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12495404c1d42a02027dc52228f08_selected_session",
+                "query": {
+                  "datasetName": "d8ae8260",
+                  "parameters": [
+                    {
+                      "name": "selected_session",
+                      "keyword": "selected_session"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f126064c8013fcb5968cd0818d3a6e_selected_session",
+                "query": {
+                  "datasetName": "93f61fe3",
+                  "parameters": [
+                    {
+                      "name": "selected_session",
+                      "keyword": "selected_session"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12615d62f1b81be4cd2551ee891a1_selected_session",
+                "query": {
+                  "datasetName": "5d74436a",
+                  "parameters": [
+                    {
+                      "name": "selected_session",
+                      "keyword": "selected_session"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f1248cc30719d79be5d3eb2a72af56_selected_session",
+                "query": {
+                  "datasetName": "49e9bce6",
+                  "parameters": [
+                    {
+                      "name": "selected_session",
+                      "keyword": "selected_session"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f1261df1281e49b7c050c9659d6095_selected_session",
+                "query": {
+                  "datasetName": "002181d6",
+                  "parameters": [
+                    {
+                      "name": "selected_session",
+                      "keyword": "selected_session"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Session",
+                "showDescription": false
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "parameterName": "selected_session",
+                    "queryName": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f124831a2e1d3eaa46ea05f61817bb_selected_session"
+                  },
+                  {
+                    "parameterName": "selected_session",
+                    "queryName": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12495404c1d42a02027dc52228f08_selected_session"
+                  },
+                  {
+                    "fieldName": "session_id",
+                    "queryName": "dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f1248cca1b1cdb8f32e18288d621d5_session_id"
+                  },
+                  {
+                    "parameterName": "selected_session",
+                    "queryName": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f126064c8013fcb5968cd0818d3a6e_selected_session"
+                  },
+                  {
+                    "parameterName": "selected_session",
+                    "queryName": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f12615d62f1b81be4cd2551ee891a1_selected_session"
+                  },
+                  {
+                    "parameterName": "selected_session",
+                    "queryName": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f1248cc30719d79be5d3eb2a72af56_selected_session"
+                  },
+                  {
+                    "parameterName": "selected_session",
+                    "queryName": "parameter_dashboards/01f12482cf5515aeb507ccb013ff4f04/datasets/01f1261df1281e49b7c050c9659d6095_selected_session"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "2db3ffb6",
+      "displayName": "Scene-by-Scene",
+      "layout": [
+        {
+          "widget": {
+            "name": "fixation-count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "002181d6",
+                  "fields": [
+                    {
+                      "name": "trial_number",
+                      "expression": "`trial_number`"
+                    },
+                    {
+                      "name": "fixation_count",
+                      "expression": "`fixation_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Fixation count"
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "trial_number",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "fixation_count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "dwell-time-negative-positive",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "002181d6",
+                  "fields": [
+                    {
+                      "name": "trial_number",
+                      "expression": "`trial_number`"
+                    },
+                    {
+                      "name": "dwell_time_ms_negative",
+                      "expression": "`dwell_time_ms_negative`"
+                    },
+                    {
+                      "name": "dwell_time_ms_neutral",
+                      "expression": "`dwell_time_ms_neutral`"
+                    },
+                    {
+                      "name": "dwell_time_ms_positive",
+                      "expression": "`dwell_time_ms_positive`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Dwell time negative vs positive"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "trial_number",
+                  "axis": {
+                    "hideLabels": false,
+                    "hideGrid": false
+                  },
+                  "scale": {
+                    "type": "quantitative",
+                    "reverse": false,
+                    "fn": {
+                      "type": "symlog"
+                    }
+                  }
+                },
+                "y": {
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "fields": [
+                    {
+                      "fieldName": "dwell_time_ms_negative"
+                    },
+                    {
+                      "fieldName": "dwell_time_ms_neutral"
+                    },
+                    {
+                      "fieldName": "dwell_time_ms_positive"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "fixation-proportion",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "002181d6",
+                  "fields": [
+                    {
+                      "name": "trial_number",
+                      "expression": "`trial_number`"
+                    },
+                    {
+                      "name": "fixation_proportion_negative",
+                      "expression": "`fixation_proportion_negative`"
+                    },
+                    {
+                      "name": "fixation_proportion_positive",
+                      "expression": "`fixation_proportion_positive`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Fixation proportion"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "trial_number",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "scale": {
+                    "type": "quantitative",
+                    "fn": {
+                      "type": "symlog"
+                    }
+                  },
+                  "fields": [
+                    {
+                      "fieldName": "fixation_proportion_negative"
+                    },
+                    {
+                      "fieldName": "fixation_proportion_positive"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "scanpath-length",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "002181d6",
+                  "fields": [
+                    {
+                      "name": "trial_number",
+                      "expression": "`trial_number`"
+                    },
+                    {
+                      "name": "sum(scanpath_length)",
+                      "expression": "SUM(`scanpath_length`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Scanpath length"
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "trial_number",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(scanpath_length)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 18,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "gaze-entropy",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "002181d6",
+                  "fields": [
+                    {
+                      "name": "trial_number",
+                      "expression": "`trial_number`"
+                    },
+                    {
+                      "name": "sum(gaze_transition_entropy)",
+                      "expression": "SUM(`gaze_transition_entropy`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Gaze entropy"
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "trial_number",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(gaze_transition_entropy)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "first-fixation-valence",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "002181d6",
+                  "fields": [
+                    {
+                      "name": "count(trial_number)",
+                      "expression": "COUNT(`trial_number`)"
+                    },
+                    {
+                      "name": "first_fixation_valence",
+                      "expression": "`first_fixation_valence`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "First fixation valence"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "first_fixation_valence",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "count(trial_number)",
+                  "scale": {
+                    "type": "quantitative",
+                    "fn": {
+                      "type": "symlog"
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "count(trial_number)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 30,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "scene-detail",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "002181d6",
+                  "fields": [
+                    {
+                      "name": "scene_index",
+                      "expression": "`scene_index`"
+                    },
+                    {
+                      "name": "trial_number",
+                      "expression": "`trial_number`"
+                    },
+                    {
+                      "name": "first_fixation_valence",
+                      "expression": "`first_fixation_valence`"
+                    },
+                    {
+                      "name": "fixation_count",
+                      "expression": "`fixation_count`"
+                    },
+                    {
+                      "name": "mean_fixation_duration_ms",
+                      "expression": "`mean_fixation_duration_ms`"
+                    },
+                    {
+                      "name": "dwell_time_ms_negative",
+                      "expression": "`dwell_time_ms_negative`"
+                    },
+                    {
+                      "name": "dwell_time_ms_positive",
+                      "expression": "`dwell_time_ms_positive`"
+                    },
+                    {
+                      "name": "dwell_time_ms_neutral",
+                      "expression": "`dwell_time_ms_neutral`"
+                    },
+                    {
+                      "name": "fixation_proportion_negative",
+                      "expression": "`fixation_proportion_negative`"
+                    },
+                    {
+                      "name": "fixation_proportion_positive",
+                      "expression": "`fixation_proportion_positive`"
+                    },
+                    {
+                      "name": "scanpath_length",
+                      "expression": "`scanpath_length`"
+                    },
+                    {
+                      "name": "saccade_count",
+                      "expression": "`saccade_count`"
+                    },
+                    {
+                      "name": "blink_count",
+                      "expression": "`blink_count`"
+                    },
+                    {
+                      "name": "gaze_transition_entropy",
+                      "expression": "`gaze_transition_entropy`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Scene detail"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "scene_index"
+                  },
+                  {
+                    "fieldName": "trial_number"
+                  },
+                  {
+                    "fieldName": "first_fixation_valence"
+                  },
+                  {
+                    "fieldName": "fixation_count"
+                  },
+                  {
+                    "fieldName": "mean_fixation_duration_ms"
+                  },
+                  {
+                    "fieldName": "dwell_time_ms_negative"
+                  },
+                  {
+                    "fieldName": "dwell_time_ms_positive"
+                  },
+                  {
+                    "fieldName": "dwell_time_ms_neutral"
+                  },
+                  {
+                    "fieldName": "fixation_proportion_negative"
+                  },
+                  {
+                    "fieldName": "fixation_proportion_positive"
+                  },
+                  {
+                    "fieldName": "scanpath_length"
+                  },
+                  {
+                    "fieldName": "saccade_count"
+                  },
+                  {
+                    "fieldName": "blink_count"
+                  },
+                  {
+                    "fieldName": "gaze_transition_entropy"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 36,
+            "width": 12,
+            "height": 14
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
