@@ -42,12 +42,10 @@ df = df.withColumn(
 
 df = df.withColumn(
     "bdi_severity",
-    F.when(F.col("bdi_score") <= 10, "normal")
-     .when(F.col("bdi_score") <= 16, "mild")
-     .when(F.col("bdi_score") <= 20, "borderline")
-     .when(F.col("bdi_score") <= 30, "moderate")
-     .when(F.col("bdi_score") <= 40, "severe")
-     .otherwise("extreme")
+    F.when(F.col("bdi_score") <= 13, "minimal")
+     .when(F.col("bdi_score") <= 19, "mild")
+     .when(F.col("bdi_score") <= 28, "moderate")
+     .otherwise("severe")
 )
 
 # COMMAND ----------
