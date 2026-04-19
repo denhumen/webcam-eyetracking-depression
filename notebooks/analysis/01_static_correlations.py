@@ -19,7 +19,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.session_visualization import plot_severity_trend
+from src.visualization.session import plot_severity_trend
 
 # COMMAND ----------
 

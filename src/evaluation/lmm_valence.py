@@ -5,6 +5,7 @@ Mixed-effects models testing depression x valence interactions across multiple g
 import numpy as np
 import pandas as pd
 import warnings
+import matplotlib.pyplot as plt
 
 import statsmodels.formula.api as smf
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
@@ -112,3 +113,43 @@ def apply_fdr(summary):
         _, p_fdr, _, _ = multipletests(summary[col].values, method="fdr_bh")
         summary[col + "_fdr"] = p_fdr
     return summary
+
+def plot_valence_effects(df, raw_score_col, score_label):
+    """
+    Plot mean dwell time by valence, split by median depression score.
+    """
+    median_score = df[raw_score_col].median()
+    df = df.copy()
+    df["group"] = np.where(df[raw_score_col] < median_score,
+                           f"Low {score_label} (<{median_score:.0f})",
+                           f"High {score_label} (>={median_score:.0f})")
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+    grouped = df.groupby(["valence", "group"])["dwell_time"].mean().unstack()
+    grouped.plot(kind="bar", ax=axes[0], edgecolor="white",
+                 color=["#2196F3", "#F44336"])
+    axes[0].set_title("Mean dwell time by valence and depression")
+    axes[0].set_xlabel("Valence")
+    axes[0].set_ylabel("Dwell time (ms)")
+    axes[0].legend(fontsize=9)
+    axes[0].grid(axis="y", alpha=0.3)
+
+    valence_order = ["negative", "neutral", "positive"]
+    for group_name, color in [(f"Low {score_label} (<{median_score:.0f})", "#2196F3"),
+                               (f"High {score_label} (>={median_score:.0f})", "#F44336")]:
+        subset = df[df["group"] == group_name]
+        means = subset.groupby("valence")["dwell_time"].mean().reindex(valence_order)
+        sems = subset.groupby("valence")["dwell_time"].sem().reindex(valence_order)
+        axes[1].errorbar(valence_order, means.values, yerr=sems.values,
+                         color=color, linewidth=2.5, marker="o", markersize=8,
+                         capsize=5, label=group_name)
+
+    axes[1].set_title("Valence x depression interaction")
+    axes[1].set_xlabel("Valence")
+    axes[1].set_ylabel("Dwell time (ms)")
+    axes[1].legend(fontsize=9)
+    axes[1].grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()

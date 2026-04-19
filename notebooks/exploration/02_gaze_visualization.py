@@ -17,8 +17,6 @@
 # COMMAND ----------
 
 import importlib
-import src.scene_visualization
-importlib.reload(src.scene_visualization)
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -31,7 +29,7 @@ from src.preprocessing import (
     compute_session_quality, get_scene_images,
 )
 from src.scene_metrics import derive_valence
-from src.scene_visualization import plot_scene_exploration, VALENCE_COLORS
+from src.visualization.scene import plot_scene_exploration, VALENCE_COLORS
 
 # COMMAND ----------
 
