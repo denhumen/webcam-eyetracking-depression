@@ -6,6 +6,18 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Optional, Tuple
 
+from config import (
+    SESSION_MIN_SAMPLES,
+    SESSION_MIN_DURATION_SEC,
+    SESSION_MAX_MISSING_PCT,
+    SESSION_MIN_SCENES,
+    SCENE_MIN_SAMPLES,
+    SCENE_MIN_DURATION_MS,
+    SCENE_MAX_MISSING_PCT,
+    SCENE_MAX_BLINK_PCT,
+    SCENE_MIN_FIXATIONS,
+)
+
 FEV_SACCADE = 0 # no fixation (saccade / free gaze)
 FEV_FIX_START = 1 # fixation start
 FEV_FIX_CONTINUE = 2 # fixation continuing
@@ -177,10 +189,10 @@ def compute_session_quality(df: pd.DataFrame) -> dict:
     Compute quality indicators for a session.
 
     A session is valid if it matches all of requirements:
-    - at least 200 samples
-    - duration at least 30 seconds
-    - less than 50% missing gaze overall
-    - at least 10 scenes recorded
+    - at least SESSION_MIN_SAMPLES samples
+    - duration at least SESSION_MIN_DURATION_SEC seconds
+    - less than SESSION_MAX_MISSING_PCT missing gaze overall
+    - at least SESSION_MIN_SCENES scenes recorded
     """
     n = len(df)
     if n == 0:
@@ -195,10 +207,10 @@ def compute_session_quality(df: pd.DataFrame) -> dict:
     mean_interval = intervals.mean() if len(intervals) > 0 else 0.0
 
     is_valid = (
-        n >= 200
-        and duration >= 30000
-        and missing_ratio < 0.5
-        and n_scenes >= 10
+        n >= SESSION_MIN_SAMPLES
+        and duration >= SESSION_MIN_DURATION_SEC * 1000
+        and missing_ratio < SESSION_MAX_MISSING_PCT
+        and n_scenes >= SESSION_MIN_SCENES
     )
 
     return {
@@ -217,11 +229,11 @@ def compute_scene_quality(scene_df: pd.DataFrame) -> dict:
     Compute quality indicators for a scene.
 
     A scene is valid if it matches all of requirements:
-    - at least 20 samples
-    - duration at least 1000ms
-    - less than 30% missing gaze data
-    - less than 40% blink samples
-    - at least 1 detected fixation
+    - at least SCENE_MIN_SAMPLES samples
+    - duration at least SCENE_MIN_DURATION_MS
+    - less than SCENE_MAX_MISSING_PCT missing gaze data
+    - less than SCENE_MAX_BLINK_PCT blink samples
+    - at least SCENE_MIN_FIXATIONS detected fixations
     """
     n = len(scene_df)
     if n == 0:
@@ -236,11 +248,11 @@ def compute_scene_quality(scene_df: pd.DataFrame) -> dict:
     n_fixations = int((fev == FEV_FIX_START).sum())
 
     is_valid = (
-        n >= 20
-        and duration >= 1000
-        and missing_ratio < 0.3
-        and blink_ratio < 0.4
-        and n_fixations >= 1
+        n >= SCENE_MIN_SAMPLES
+        and duration >= SCENE_MIN_DURATION_MS
+        and missing_ratio < SCENE_MAX_MISSING_PCT
+        and blink_ratio < SCENE_MAX_BLINK_PCT
+        and n_fixations >= SCENE_MIN_FIXATIONS
     )
 
     return {

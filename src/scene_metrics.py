@@ -5,6 +5,7 @@ Computation of static attentional indicators
 import numpy as np
 import pandas as pd
 from typing import Dict, Optional, List
+from config import NEGATIVE_KEYWORDS, POSITIVE_KEYWORDS
 
 def derive_valence(category: str, labels: list) -> str:
     """
@@ -16,12 +17,9 @@ def derive_valence(category: str, labels: list) -> str:
     if category.strip() == "neutral":
         return "neutral"
     
-    negative_keywords = {"sad face", "funeral", "suicide", "death", "dep", "breakup"}
-    if any(kw in labels_lower for kw in negative_keywords):
+    if any(kw in labels_lower for kw in NEGATIVE_KEYWORDS):
         return "negative"
-    
-    positive_keywords = {"happy face", "positive", "happy", "wedding", "party", "pregnant"}
-    if any(kw in labels_lower for kw in positive_keywords):
+    if any(kw in labels_lower for kw in POSITIVE_KEYWORDS):
         return "positive"
     
     if "food" in labels_lower:
