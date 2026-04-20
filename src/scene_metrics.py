@@ -22,9 +22,6 @@ def derive_valence(category: str, labels: list) -> str:
     if any(kw in labels_lower for kw in POSITIVE_KEYWORDS):
         return "positive"
     
-    if "food" in labels_lower:
-        return "food"
-    
     return "other"
 
 def fixation_count(fixations: pd.DataFrame) -> int:

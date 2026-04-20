@@ -110,7 +110,7 @@ if all_rows:
     
     for col in pdf.columns:
         if pdf[col].dtype == object:
-            pdf[col] = pdf[col].astype(str)
+            pdf[col] = pdf[col].where(pdf[col].notna(), None).astype("string")
     
     sdf = spark.createDataFrame(pdf)
     sdf.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(TABLE_SCENE_METRICS)

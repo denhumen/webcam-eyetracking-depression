@@ -2,14 +2,14 @@
 # MAGIC %md
 # MAGIC # Data overview
 # MAGIC
-# MAGIC This notebook explores the dataset before running any analysis. The goal is to understand what we have, how it's distributed, and whether the data quality is good enough to trust the results.
+# MAGIC This notebook explores the dataset before running any analysis
 # MAGIC
-# MAGIC **What's in the dataset:**
+# MAGIC **Dataset exploration:**
 # MAGIC - Eye-tracking recordings from the Anima.help platform, where users watch pairs of images (positive, negative and neutral) while a webcam tracks their gaze
 # MAGIC - Each recording is called a session. Each session has ~50 stimulus scenes (image pairs) and ~50 fixation cross scenes (rest periods between image pairs)
 # MAGIC - For each session, the user also filled out two depression questionnaires: PHQ-9 (9 questions, score 0-27) and BDI (21 questions, score 0-63)
 # MAGIC
-# MAGIC **What this notebook checks:**
+# MAGIC **This notebook checks:**
 # MAGIC 1. How many sessions, users, and stimuli we have
 # MAGIC 2. How depression scores are distributed across users
 # MAGIC 3. How each eye-tracking metric is distributed across scenes
