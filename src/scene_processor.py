@@ -48,7 +48,9 @@ def compute_scene_metrics(
         "mean_fixation_duration_ms": sm.mean_fixation_duration(fixations),
         "total_fixation_duration_ms": sm.total_fixation_duration(fixations),
         "fixation_rate_per_sec": sm.fixation_rate(fixations, duration_ms),
-        "fixation_bias": np.nan,
+        "bias_neg_vs_pos": np.nan,
+        "bias_neg_vs_neu": np.nan,
+        "bias_pos_vs_neu": np.nan,
 
         "first_fixation_image": sm.first_fixation_image(fixations),
         "first_fixation_duration_ms": sm.first_fixation_duration(fixations),
@@ -124,7 +126,9 @@ def compute_scene_metrics(
 
         scene_valences = sorted(set(image_valences.values()))
         metrics["scene_valence_pair"] = "_vs_".join(scene_valences)
-        metrics["fixation_bias"] = sm.fixation_bias(fixations, stimulus_config, images)
+        metrics["bias_neg_vs_pos"] = sm._pair_bias(fixations, stimulus_config, images, "negative", "positive")
+        metrics["bias_neg_vs_neu"] = sm._pair_bias(fixations, stimulus_config, images, "negative", "neutral")
+        metrics["bias_pos_vs_neu"] = sm._pair_bias(fixations, stimulus_config, images, "positive", "neutral")
         
         for i, img_id in enumerate(images):
             suffix = f"_img{i}"

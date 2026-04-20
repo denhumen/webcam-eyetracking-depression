@@ -158,7 +158,6 @@ metrics = {
     "fixation_rate_per_sec": "fix/sec",
     "fixation_bias": "ratio (-1 to 1)",
     "first_fixation_duration_ms": "ms",
-    "second_fixation_duration_ms": "ms",
     "scanpath_length": "px",
     "saccade_count": "count",
     "saccade_rate_per_sec": "sacc/sec",

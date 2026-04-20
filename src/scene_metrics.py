@@ -95,14 +95,23 @@ def fixation_proportion_per_image(fixations: pd.DataFrame) -> Dict[str, float]:
         return {}
     return {img: t / total for img, t in dwell.items()}
 
-def fixation_bias(fixations: pd.DataFrame, stimulus_config: Optional[Dict] = None, images: Optional[List[str]] = None) -> float:
+def _pair_bias(
+    fixations: pd.DataFrame,
+    stimulus_config: Optional[Dict],
+    images: Optional[List[str]],
+    valence_a: str,
+    valence_b: str,
+) -> float:
     """
-    Proportional difference in fixation time between negative and positive stimuli
+    Proportional dwell difference between two valences: (a - b) / (a + b).
+    
+    Returns NaN unless at least one image of each valence is present in the scene.
+    Positive value → more dwell on valence_a; negative → more dwell on valence_b.
     """
     if not stimulus_config or not images:
         return np.nan
     
-    valence_dwell = {}
+    valence_dwell: Dict[str, float] = {}
     dwell = dwell_time_per_image(fixations)
     
     for img_id in images:
@@ -113,17 +122,17 @@ def fixation_bias(fixations: pd.DataFrame, stimulus_config: Optional[Dict] = Non
             )
             valence_dwell[v] = valence_dwell.get(v, 0.0) + dwell.get(img_id, 0.0)
     
-    neg = valence_dwell.get("negative", np.nan)
-    pos = valence_dwell.get("positive", np.nan)
+    a = valence_dwell.get(valence_a, np.nan)
+    b = valence_dwell.get(valence_b, np.nan)
     
-    if np.isnan(neg) or np.isnan(pos):
+    if np.isnan(a) or np.isnan(b):
         return np.nan
     
-    total = neg + pos
+    total = a + b
     if total <= 0:
         return np.nan
     
-    return (neg - pos) / total
+    return (a - b) / total
 
 def first_fixation_image(fixations: pd.DataFrame) -> Optional[str]:
     """
