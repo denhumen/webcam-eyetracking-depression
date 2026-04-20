@@ -1,5 +1,5 @@
-from .preprocessing import get_scene_images, get_scene_duration_ms, classify_scene_type
-from .scene_metrics import derive_valence
+from ..preprocessing import get_scene_images, get_scene_duration_ms, classify_scene_type
+from ..scene_metrics import derive_valence
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt

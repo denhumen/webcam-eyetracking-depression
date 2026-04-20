@@ -52,8 +52,6 @@ def compute_scene_metrics(
 
         "first_fixation_image": sm.first_fixation_image(fixations),
         "first_fixation_duration_ms": sm.first_fixation_duration(fixations),
-        "second_fixation_image": sm.second_fixation_image(fixations),
-        "second_fixation_duration_ms": sm.second_fixation_duration(fixations),
         
         "scanpath_length": sm.scanpath_length(fixations),
         "saccade_count": sm.saccade_count(fixations),
@@ -124,9 +122,6 @@ def compute_scene_metrics(
         ff_img = sm.first_fixation_image(fixations)
         metrics["first_fixation_valence"] = image_valences.get(ff_img, None) if ff_img else None
 
-        sf_img = sm.second_fixation_image(fixations)
-        metrics["second_fixation_valence"] = image_valences.get(sf_img, None) if sf_img else None
-        
         scene_valences = sorted(set(image_valences.values()))
         metrics["scene_valence_pair"] = "_vs_".join(scene_valences)
         metrics["fixation_bias"] = sm.fixation_bias(fixations, stimulus_config, images)

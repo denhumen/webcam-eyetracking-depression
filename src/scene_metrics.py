@@ -144,25 +144,6 @@ def first_fixation_duration(fixations: pd.DataFrame) -> float:
         return np.nan
     return float(on_image.iloc[0]["duration_ms"])
 
-def second_fixation_image(fixations: pd.DataFrame) -> Optional[str]:
-    """
-    Which image received the second fixation in the scene.
-    Returns image_id or None.
-    """
-    on_image = fixations[fixations["image"].notna() & (fixations["image"] != "")]
-    if len(on_image) < 2:
-        return None
-    return on_image.iloc[1]["image"]
-
-def second_fixation_duration(fixations: pd.DataFrame) -> float:
-    """
-    Duration of the second fixation that lands on any image
-    """
-    on_image = fixations[fixations["image"].notna() & (fixations["image"] != "")]
-    if len(on_image) < 2:
-        return np.nan
-    return float(on_image.iloc[1]["duration_ms"])
-
 def time_to_first_fixation_on_image(
     fixations: pd.DataFrame, 
     scene_start_ts: float,
@@ -204,22 +185,32 @@ def dwell_time_first_epoch(
     epoch_ms: float = 500.0,
 ) -> Dict[str, float]:
     """
-    Dwell time by image AOI (Area of interest) within the first epoch after scene onset
+    Dwell time by image AOI within the first epoch after scene onset.
+    Each fixation contributes only the portion of its duration that falls
+    inside the [scene_start_ts, scene_start_ts + epoch_ms] window.
     """
     if len(fixations) == 0 or np.isnan(scene_start_ts):
         return {}
     
     epoch_end = scene_start_ts + epoch_ms
-    early_fix = fixations[fixations["start_timestamp"] <= epoch_end].copy()
     
-    if len(early_fix) == 0:
+    overlapping = fixations[
+        (fixations["end_timestamp"] >= scene_start_ts) &
+        (fixations["start_timestamp"] <= epoch_end)
+    ].copy()
+    
+    if len(overlapping) == 0:
         return {}
     
-    on_image = early_fix[early_fix["image"].notna() & (early_fix["image"] != "")]
+    on_image = overlapping[overlapping["image"].notna() & (overlapping["image"] != "")].copy()
     if len(on_image) == 0:
         return {}
     
-    return on_image.groupby("image")["duration_ms"].sum().to_dict()
+    clip_start = np.maximum(on_image["start_timestamp"].values, scene_start_ts)
+    clip_end = np.minimum(on_image["end_timestamp"].values, epoch_end)
+    on_image["early_overlap_ms"] = np.maximum(clip_end - clip_start, 0.0)
+    
+    return on_image.groupby("image")["early_overlap_ms"].sum().to_dict()
 
 def scanpath_length(fixations: pd.DataFrame) -> float:
     """
@@ -228,8 +219,9 @@ def scanpath_length(fixations: pd.DataFrame) -> float:
     if len(fixations) < 2:
         return 0.0
     
-    rx = fixations["rx"].dropna().values
-    ry = fixations["ry"].dropna().values
+    mask = fixations["rx"].notna() & fixations["ry"].notna()
+    rx = fixations.loc[mask, "rx"].values
+    ry = fixations.loc[mask, "ry"].values
     
     if len(rx) < 2:
         return 0.0
@@ -266,8 +258,9 @@ def mean_saccade_amplitude(fixations: pd.DataFrame) -> float:
     if len(fixations) < 2:
         return np.nan
     
-    rx = fixations["rx"].dropna().values
-    ry = fixations["ry"].dropna().values
+    mask = fixations["rx"].notna() & fixations["ry"].notna()
+    rx = fixations.loc[mask, "rx"].values
+    ry = fixations.loc[mask, "ry"].values
     
     if len(rx) < 2:
         return np.nan

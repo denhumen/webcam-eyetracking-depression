@@ -21,7 +21,7 @@ STIMULUS_SETS = {
 FOLDERS_TO_PROCESS = ["depression", "Depression_2", "Depression_3", "Depression_4"]
 
 # Valence classification keywords
-NEGATIVE_KEYWORDS = {"sad face", "funeral", "suicide", "death", "dep", "breakup"}
+NEGATIVE_KEYWORDS = {"sad face", "sad", "funeral", "suicide", "death", "breakup"}
 POSITIVE_KEYWORDS = {"happy face", "positive", "happy", "wedding", "party", "pregnant"}
 
 # Quality thresholds

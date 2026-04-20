@@ -54,17 +54,11 @@ session_metrics = df_stimulus.groupBy("session_id").agg(
     F.mean("transition_matrix_density").alias("avg_transition_density"),
     F.mean("gaze_transition_entropy").alias("avg_gaze_entropy"),
 
-    # First / second fixation
+    # First fixation
     F.mean("first_fixation_duration_ms").alias("avg_first_fixation_duration_ms"),
-    F.mean("second_fixation_duration_ms").alias("avg_second_fixation_duration_ms"),
-
-    # First / second fixation probability per valence
     F.avg(F.when(F.col("first_fixation_valence") == "negative", 1).otherwise(0)).alias("first_fix_prob_negative"),
     F.avg(F.when(F.col("first_fixation_valence") == "positive", 1).otherwise(0)).alias("first_fix_prob_positive"),
     F.avg(F.when(F.col("first_fixation_valence") == "neutral", 1).otherwise(0)).alias("first_fix_prob_neutral"),
-    F.avg(F.when(F.col("second_fixation_valence") == "negative", 1).otherwise(0)).alias("second_fix_prob_negative"),
-    F.avg(F.when(F.col("second_fixation_valence") == "positive", 1).otherwise(0)).alias("second_fix_prob_positive"),
-    F.avg(F.when(F.col("second_fixation_valence") == "neutral", 1).otherwise(0)).alias("second_fix_prob_neutral"),
 
     # Dwell time by valence
     F.mean("dwell_time_ms_negative").alias("avg_dwell_time_negative"),
