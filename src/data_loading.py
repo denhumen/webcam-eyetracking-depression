@@ -9,10 +9,45 @@ import pandas as pd
 
 def load_stimulus_config(json_path: str) -> Dict:
     """
-    Load a single JSON stimulus config
+    Load a single JSON stimulus config.
     """
     with open(json_path, "r") as f:
-        return json.load(f)
+        data = json.load(f)
+    
+    if isinstance(data, list):
+        flat = {}
+        for pair in data:
+            flat.update(pair)
+        return flat
+    
+    return data
+
+def load_stimulus_schedule(json_path: str) -> Dict[int, Dict[str, str]]:
+    """
+    Load the stimulus schedule as a scene-indexed dict.
+    """
+    with open(json_path, "r") as f:
+        data = json.load(f)
+    
+    if not isinstance(data, list):
+        raise ValueError(
+            f"{json_path}: expected list-of-pairs schedule format, got {type(data).__name__}"
+        )
+    
+    schedule = {}
+    for position, pair in enumerate(data):
+        if len(pair) != 2:
+            raise ValueError(
+                f"{json_path} position {position}: expected 2 images, got {len(pair)}"
+            )
+        image_ids = list(pair.keys())
+        scene_index = 2 * position + 1
+        schedule[scene_index] = {
+            "left": image_ids[0],
+            "right": image_ids[1],
+        }
+    
+    return schedule
 
 def load_forms(forms_path) -> pd.DataFrame:
     """

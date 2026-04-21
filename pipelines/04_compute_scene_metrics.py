@@ -6,8 +6,9 @@
 # MAGIC 1. Reads the raw CSV
 # MAGIC 2. Iterates over scenes
 # MAGIC 3. Extracts fixations and blinks
-# MAGIC 4. Computes all static attention metrics
-# MAGIC 5. Writes to the TABLE_SCENE_METRICS table (from config.py) 
+# MAGIC 4. Computes all static attention metrics (using the stimulus schedule as
+# MAGIC    the ground truth for which images were shown per scene)
+# MAGIC 5. Writes to the TABLE_SCENE_METRICS table (from config.py)
 
 # COMMAND ----------
 
@@ -16,13 +17,16 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from src.data_loading import load_stimulus_config, load_session, session_id_from_path
+from src.data_loading import (
+    load_stimulus_config, load_stimulus_schedule,
+    load_session, session_id_from_path,
+)
 from src.preprocessing import get_scene_indices, get_scene_data, compute_session_quality
 from src.scene_processor import compute_scene_metrics
 
 # COMMAND ----------
 
-def process_session(csv_path, folder, stimulus_config):
+def process_session(csv_path, folder, stimulus_config, stimulus_schedule):
     """
     Process one session CSV, return list of scene metric dicts or None if invalid
     """
@@ -41,12 +45,14 @@ def process_session(csv_path, folder, stimulus_config):
     rows = []
     for scene_idx in get_scene_indices(df):
         scene_df = get_scene_data(df, scene_idx)
-        metrics = compute_scene_metrics(scene_df, scene_idx, stimulus_config)
+        scene_schedule = stimulus_schedule.get(scene_idx)
+        metrics = compute_scene_metrics(
+            scene_df, scene_idx, stimulus_config, scene_schedule
+        )
         
         metrics["session_id"] = session_id
         metrics["folder"] = folder
         
-        metrics["image_ids"] = json.dumps(metrics.get("image_ids", []))
         for key in list(metrics.keys()):
             if isinstance(metrics[key], list):
                 metrics[key] = json.dumps(metrics[key])
@@ -67,8 +73,9 @@ for version in FOLDERS_TO_PROCESS:
     json_path = f"{VOLUME_BASE}/set/{STIMULUS_SETS[version]}"
     try:
         stim_config = load_stimulus_config(json_path)
+        stim_schedule = load_stimulus_schedule(json_path)
     except Exception as e:
-        print(f"Could not load config: {e}")
+        print(f"Could not load config/schedule: {e}")
         continue
     
     folder_path = f"{VOLUME_BASE}/set/{version}"
@@ -86,7 +93,7 @@ for version in FOLDERS_TO_PROCESS:
     
     for i, csv_path in enumerate(csv_files):
         try:
-            rows = process_session(csv_path, version, stim_config)
+            rows = process_session(csv_path, version, stim_config, stim_schedule)
             if rows:
                 all_rows.extend(rows)
                 processed += 1

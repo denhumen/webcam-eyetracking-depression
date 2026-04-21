@@ -12,25 +12,25 @@ def compute_scene_metrics(
     scene_df: pd.DataFrame,
     scene_index: int,
     stimulus_config: Optional[Dict] = None,
+    scene_schedule: Optional[Dict[str, str]] = None,
 ) -> dict:
     """
-    Compute all static attention metrics for a single scene.
-    
-    Args:
-        scene_df (DataFrame): Raw gaze data for this scene
-        scene_index (int): The scene index in the session
-        stimulus_config (dict, optional): The stimulus JSON config
-    
-    Returns
-        dict: all computed metrics and scene metadata.
+    Compute all attention metrics for a single scene
     """
     scene_type = pp.classify_scene_type(scene_index)
-    images = pp.get_scene_images(scene_df)
     duration_ms = pp.get_scene_duration_ms(scene_df)
     quality = pp.compute_scene_quality(scene_df)
     fixations = pp.extract_fixations(scene_df)
     blinks = pp.extract_blinks(scene_df)
     scene_start = scene_df["TIMESTAMP"].iloc[0] if len(scene_df) > 0 else np.nan
+    
+    detected_image_ids = sorted(pp.get_scene_images(scene_df))
+    
+    if scene_schedule is not None:
+        images = [img for img in [scene_schedule.get("left"), scene_schedule.get("right")] if img]
+    else:
+        images = detected_image_ids
+    
     aoi_list = images + ["other"] if images else ["other"]
     
     metrics = {
@@ -43,6 +43,14 @@ def compute_scene_metrics(
         "scene_quality_valid": quality["is_valid"],
         "blink_ratio": quality.get("blink_ratio", np.nan),
         "missing_gaze_ratio": quality.get("missing_gaze_ratio", np.nan),
+        
+        "schedule_provided": scene_schedule is not None,
+        "detected_image_ids": detected_image_ids,
+        "unexpected_detected_images": [],
+        "image_left_id": scene_schedule["left"] if scene_schedule else None,
+        "image_right_id": scene_schedule["right"] if scene_schedule else None,
+        "valence_left": None,
+        "valence_right": None,
         
         "fixation_count": sm.fixation_count(fixations),
         "mean_fixation_duration_ms": sm.mean_fixation_duration(fixations),
@@ -87,14 +95,26 @@ def compute_scene_metrics(
             else:
                 image_valences[img_id] = "unknown"
 
+        if scene_schedule is not None:
+            metrics["valence_left"] = image_valences.get(scene_schedule["left"])
+            metrics["valence_right"] = image_valences.get(scene_schedule["right"])
+            
+            scheduled_set = {scene_schedule["left"], scene_schedule["right"]}
+            unexpected = sorted(set(detected_image_ids) - scheduled_set)
+            metrics["unexpected_detected_images"] = unexpected
+
         early_dwell = sm.dwell_time_first_epoch(fixations, scene_start, epoch_ms=500.0)
         early_valence_dwell = {}
         for img_id, dt in early_dwell.items():
             v = image_valences.get(img_id, "unknown")
             early_valence_dwell[v] = early_valence_dwell.get(v, 0.0) + dt
         
+        valences_in_scene = set(image_valences.values())
         for v in ["negative", "positive", "neutral"]:
-            metrics[f"dwell_time_500ms_{v}"] = early_valence_dwell.get(v, np.nan)
+            if v in valences_in_scene:
+                metrics[f"dwell_time_500ms_{v}"] = early_valence_dwell.get(v, 0.0)
+            else:
+                metrics[f"dwell_time_500ms_{v}"] = np.nan
         
         valence_dwell: Dict[str, float] = {}
         valence_fix_count: Dict[str, int] = {}
@@ -113,6 +133,16 @@ def compute_scene_metrics(
             ttff_val = sm.time_to_first_fixation_on_image(fixations, scene_start, img_id)
             if v not in valence_ttff or (not np.isnan(ttff_val) and ttff_val < valence_ttff.get(v, np.inf)):
                 valence_ttff[v] = ttff_val
+        
+        if len(fixations) == 0:
+            for v in list(valence_dwell.keys()):
+                valence_dwell[v] = np.nan
+                valence_fix_count[v] = np.nan
+                valence_fix_prop[v] = np.nan
+                valence_revisit[v] = np.nan
+                valence_ttff[v] = np.nan
+            for v in ["negative", "positive", "neutral"]:
+                metrics[f"dwell_time_500ms_{v}"] = np.nan
         
         for v in ["negative", "positive", "neutral"]:
             metrics[f"dwell_time_ms_{v}"] = valence_dwell.get(v, np.nan)
