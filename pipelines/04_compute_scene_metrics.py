@@ -16,7 +16,9 @@ from config import VOLUME_BASE, STIMULUS_SETS, TABLE_SCENE_METRICS, FOLDERS_TO_P
 import os
 import json
 import pandas as pd
+from pyspark.sql.types import StringType
 import numpy as np
+from pyspark.sql import functions as F
 from src.data_loading import (
     load_stimulus_config, load_stimulus_schedule,
     load_session, session_id_from_path,
@@ -120,6 +122,11 @@ if all_rows:
             pdf[col] = pdf[col].where(pdf[col].notna(), None).astype("string")
     
     sdf = spark.createDataFrame(pdf)
+
+    string_cols = [f.name for f in sdf.schema.fields if isinstance(f.dataType, StringType)]
+    for c in string_cols:
+        sdf = sdf.withColumn(c, F.when(F.col(c).isin("nan", "None"), None).otherwise(F.col(c)))
+
     sdf.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(TABLE_SCENE_METRICS)
     
     print(f"Table '{TABLE_SCENE_METRICS}' created with {len(all_rows)} rows")

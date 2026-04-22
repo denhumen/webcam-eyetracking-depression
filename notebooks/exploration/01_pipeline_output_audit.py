@@ -209,6 +209,24 @@ print(f"Sessions with fewer than {MIN_SCENES} clean scenes: {low} / {total}")
 
 # COMMAND ----------
 
+def _nan_rate_table(df, label):
+    numeric_cols = [
+        f.name for f in df.schema.fields
+        if isinstance(f.dataType, NumericType)
+        and f.name not in ("scene_index",)
+    ]
+    if not numeric_cols:
+        print("No numeric metric columns found.")
+        return None
+    exprs = [F.mean(F.col(c).isNull().cast("double")).alias(c) for c in numeric_cols]
+    result = df.select(*exprs).toPandas().T
+    result.columns = ["nan_rate"]
+    result = result.sort_values("nan_rate", ascending=False)
+    print(f"\n=== NaN rates on {label} (sorted, highest first) ===")
+    return result
+
+# COMMAND ----------
+
 for pair in VALID_PAIRS:
     sub = clean_stim.filter(F.col("scene_valence_pair") == pair)
     print()

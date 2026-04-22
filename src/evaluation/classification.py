@@ -23,8 +23,7 @@ CLASSIFIERS = {
         ("clf", LogisticRegression(max_iter=1000, random_state=42)),
     ]),
     "Random Forest": RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1),
-    "XGBoost": XGBClassifier(n_estimators=200, max_depth=4, learning_rate=0.1,
-                              random_state=42, eval_metric="logloss", verbosity=0),
+    "XGBoost": XGBClassifier(n_estimators=200, max_depth=4, learning_rate=0.1, random_state=42, eval_metric="logloss", verbosity=0),
 }
 
 REGRESSORS = {
@@ -33,8 +32,7 @@ REGRESSORS = {
         ("reg", Ridge(alpha=1.0)),
     ]),
     "Random Forest": RandomForestRegressor(n_estimators=200, random_state=42, n_jobs=-1),
-    "XGBoost": XGBRegressor(n_estimators=200, max_depth=4, learning_rate=0.1,
-                             random_state=42, verbosity=0),
+    "XGBoost": XGBRegressor(n_estimators=200, max_depth=4, learning_rate=0.1, random_state=42, verbosity=0),
 }
 
 GKF = GroupKFold(n_splits=5)
@@ -278,3 +276,30 @@ def plot_feature_importance(df, features, y, top_n=20, title="Feature Importance
     ax.grid(axis="x", alpha=0.3)
     plt.tight_layout()
     plt.show()
+
+def build_comparison_table(phq9_results, bdi_results):
+    """
+    Build a side-by-side PHQ-9 vs BDI-II comparison of the best model per task.
+    Returns a DataFrame with one row per task
+    """
+    metric_label = {"auc_roc": "AUC", "f1_weighted": "F1", "r2": "R2"}
+ 
+    rows = []
+    for task in phq9_results:
+        phq9_df, score_col = phq9_results[task]
+        bdi_df, _ = bdi_results[task]
+ 
+        best_phq9 = phq9_df.sort_values(score_col, ascending=False).iloc[0]
+        best_bdi = bdi_df.sort_values(score_col,  ascending=False).iloc[0]
+ 
+        rows.append({
+            "task": task,
+            "phq9_metric": metric_label.get(score_col, score_col),
+            "phq9_value": best_phq9[score_col],
+            "phq9_model": f"{best_phq9['model']} / {best_phq9['feature_set']}",
+            "bdi_metric": metric_label.get(score_col, score_col),
+            "bdi_value": best_bdi[score_col],
+            "bdi_model": f"{best_bdi['model']} / {best_bdi['feature_set']}",
+        })
+ 
+    return pd.DataFrame(rows)
