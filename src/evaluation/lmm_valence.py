@@ -1,14 +1,12 @@
 """
-Mixed-effects models testing depression x valence interactions across multiple gaze outcomes
+Mixed-effects models testing depression × valence interactions
 """
 
 import numpy as np
 import pandas as pd
-import warnings
 import matplotlib.pyplot as plt
 
 import statsmodels.formula.api as smf
-from statsmodels.tools.sm_exceptions import ConvergenceWarning
 from statsmodels.stats.multitest import multipletests
 
 BOUNDARY_THRESHOLD = 1e-6
@@ -19,7 +17,6 @@ def _at_boundary(result):
     except Exception:
         return True
 
-
 def _cohens_d(result, param):
     try:
         coef = result.params[param]
@@ -29,7 +26,6 @@ def _cohens_d(result, param):
     except Exception:
         return np.nan
 
-
 def _icc(result):
     try:
         group_intercept_var = float(result.cov_re.values[0, 0])
@@ -38,15 +34,29 @@ def _icc(result):
     except Exception:
         return np.nan
 
+def _pick_reference_and_focal(valences):
+    """
+    For a 2-valence pair, pick which is the reference category and which
+    is the focal (interaction) category
+    """
+    if "negative" in valences:
+        focal = "negative"
+        reference = next(v for v in valences if v != "negative")
+    else:
+        focal = "positive"
+        reference = "neutral"
+    return reference, focal
 
-def melt_outcome(df_wide, value_cols, id_vars):
+
+def melt_one_pair(df_wide, outcome_cols, valences, id_vars):
     """
-    Reshape one outcome into long format with valence as a factor
+    Melt a single pair's per-valence outcome columns into long format.
     """
+    keep_cols = [c for c in outcome_cols if any(c.endswith(f"_{v}") for v in valences)]
     df_long = pd.melt(
         df_wide,
         id_vars=id_vars,
-        value_vars=value_cols,
+        value_vars=keep_cols,
         var_name="valence_col",
         value_name="y",
     )
@@ -54,12 +64,19 @@ def melt_outcome(df_wide, value_cols, id_vars):
     return df_long.drop(columns=["valence_col"]).dropna(subset=["y"])
 
 
-def fit_one(df_long, score):
+def fit_one_pair(df_long, score, reference):
     """
-    Fit y ~ score * valence with a random intercept + slope per user.
-    If the slope variance is on the boundary, refit with intercept only
+    Fit y ~ score * C(valence, Treatment(reference)) + trial_norm
+    with random intercept + trial_norm slope per user. Refit with
+    intercept only if slope variance is on the boundary.
+
+    Returns (result, structure) on success, or (None, "failed") if
+    both fits error out
     """
-    formula = f"y ~ {score} * C(valence, Treatment(reference='neutral'))"
+    formula = (
+        f"y ~ {score} * C(valence, Treatment(reference='{reference}')) "
+        f"+ trial_norm"
+    )
     dsub = df_long[["y", score, "trial_norm", "valence", "uid"]].dropna()
 
     try:
@@ -70,86 +87,111 @@ def fit_one(df_long, score):
     except Exception:
         pass
 
-    model = smf.mixedlm(formula, dsub, groups=dsub["uid"])
-    result = model.fit(reml=True, method="lbfgs")
-    return result, "intercept_only"
+    try:
+        model = smf.mixedlm(formula, dsub, groups=dsub["uid"])
+        result = model.fit(reml=True, method="lbfgs")
+        return result, "intercept_only"
+    except Exception:
+        return None, "failed"
 
 
-def fit_all(long_dfs, score):
+def fit_all_per_pair(df_wide, outcomes, score, pairs, id_vars):
     """
-    Fit all outcomes for one depression score
+    Fit one LMM per (outcome, pair) combination
     """
     results = {}
     rows = []
-    neg = f"{score}:C(valence, Treatment(reference='neutral'))[T.negative]"
-    pos = f"{score}:C(valence, Treatment(reference='neutral'))[T.positive]"
 
-    for outcome, df_long in long_dfs.items():
-        result, structure = fit_one(df_long, score)
-        results[outcome] = result
+    for outcome_name, outcome_cols in outcomes.items():
+        for pair_name, pair_suffix, valences in pairs:
+            reference, focal = _pick_reference_and_focal(valences)
 
-        rows.append({
-            "outcome": outcome,
-            f"{score}_main_coef": result.params[score],
-            f"{score}_main_pval": result.pvalues[score],
-            "neg_int_coef": result.params[neg],
-            "neg_int_pval": result.pvalues[neg],
-            "neg_int_d": _cohens_d(result, neg),
-            "pos_int_coef": result.params[pos],
-            "pos_int_pval": result.pvalues[pos],
-            "pos_int_d": _cohens_d(result, pos),
-            "icc": _icc(result),
-            "random_structure": structure,
-        })
+            sub_wide = df_wide[df_wide["scene_valence_pair"] == pair_name]
+            df_long = melt_one_pair(sub_wide, outcome_cols, valences, id_vars)
+
+            if len(df_long) < 30:
+                continue
+
+            result, structure = fit_one_pair(df_long, score, reference)
+            if result is None:
+                print(f"[skip] {outcome_name} on {pair_suffix}: fit failed ({structure})")
+                continue
+
+            interaction_param = (
+                f"{score}:C(valence, Treatment(reference='{reference}'))"
+                f"[T.{focal}]"
+            )
+            valence_main = (
+                f"C(valence, Treatment(reference='{reference}'))[T.{focal}]"
+            )
+
+            results[(outcome_name, pair_suffix)] = result
+            rows.append({
+                "outcome": outcome_name,
+                "pair_suffix": pair_suffix,
+                "reference": reference,
+                "focal": focal,
+                "interaction_coef": result.params.get(interaction_param, np.nan),
+                "interaction_pval": result.pvalues.get(interaction_param, np.nan),
+                "interaction_d": _cohens_d(result, interaction_param),
+                "valence_main_coef": result.params.get(valence_main, np.nan),
+                "valence_main_pval": result.pvalues.get(valence_main, np.nan),
+                f"{score}_main_coef": result.params[score],
+                f"{score}_main_pval": result.pvalues[score],
+                "trial_norm_coef": result.params["trial_norm"],
+                "trial_norm_pval": result.pvalues["trial_norm"],
+                "icc": _icc(result),
+                "random_structure": structure,
+                "n_obs": int(result.nobs),
+            })
 
     return results, pd.DataFrame(rows)
 
 
 def apply_fdr(summary):
     """
-    Benjamini-Hochberg correction across outcomes, per interaction term
+    Benjamini-Hochberg correction across all (outcome, pair) fits, per
+    interaction term. Only one interaction per row in the new per-pair design.
     """
-    for col in ["neg_int_pval", "pos_int_pval"]:
-        _, p_fdr, _, _ = multipletests(summary[col].values, method="fdr_bh")
-        summary[col + "_fdr"] = p_fdr
+    if "interaction_pval" in summary.columns:
+        _, p_fdr, _, _ = multipletests(summary["interaction_pval"].values,
+                                       method="fdr_bh")
+        summary["interaction_pval_fdr"] = p_fdr
     return summary
 
-def plot_valence_effects(df, raw_score_col, score_label):
+
+def plot_pair_valence_effect(df_long, raw_score_col, score_label, pair_suffix, y_label="y"):
     """
-    Plot mean dwell time by valence, split by median depression score.
+    Plot the 2-valence contrast for a single pair, split by median
+    depression score. Shows mean ± SEM per valence × group.
     """
-    median_score = df[raw_score_col].median()
-    df = df.copy()
-    df["group"] = np.where(df[raw_score_col] < median_score,
-                           f"Low {score_label} (<{median_score:.0f})",
-                           f"High {score_label} (>={median_score:.0f})")
+    median_score = df_long[raw_score_col].median()
+    df = df_long.copy()
+    df["group"] = np.where(
+        df[raw_score_col] < median_score,
+        f"Low {score_label} (<{median_score:.0f})",
+        f"High {score_label} (>={median_score:.0f})",
+    )
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig, ax = plt.subplots(figsize=(7, 5))
 
-    grouped = df.groupby(["valence", "group"])["dwell_time"].mean().unstack()
-    grouped.plot(kind="bar", ax=axes[0], edgecolor="white",
-                 color=["#2196F3", "#F44336"])
-    axes[0].set_title("Mean dwell time by valence and depression")
-    axes[0].set_xlabel("Valence")
-    axes[0].set_ylabel("Dwell time (ms)")
-    axes[0].legend(fontsize=9)
-    axes[0].grid(axis="y", alpha=0.3)
+    valences = sorted(df["valence"].unique())
+    colors = {
+        f"Low {score_label} (<{median_score:.0f})":  "#2196F3",
+        f"High {score_label} (>={median_score:.0f})": "#F44336",
+    }
 
-    valence_order = ["negative", "neutral", "positive"]
-    for group_name, color in [(f"Low {score_label} (<{median_score:.0f})", "#2196F3"),
-                               (f"High {score_label} (>={median_score:.0f})", "#F44336")]:
+    for group_name, color in colors.items():
         subset = df[df["group"] == group_name]
-        means = subset.groupby("valence")["dwell_time"].mean().reindex(valence_order)
-        sems = subset.groupby("valence")["dwell_time"].sem().reindex(valence_order)
-        axes[1].errorbar(valence_order, means.values, yerr=sems.values,
-                         color=color, linewidth=2.5, marker="o", markersize=8,
-                         capsize=5, label=group_name)
+        means = subset.groupby("valence")["y"].mean().reindex(valences)
+        sems = subset.groupby("valence")["y"].sem().reindex(valences)
+        ax.errorbar(valences, means.values, yerr=sems.values, color=color, linewidth=2.5, marker="o", markersize=8, capsize=5, label=group_name)
 
-    axes[1].set_title("Valence x depression interaction")
-    axes[1].set_xlabel("Valence")
-    axes[1].set_ylabel("Dwell time (ms)")
-    axes[1].legend(fontsize=9)
-    axes[1].grid(True, alpha=0.3)
+    ax.set_title(f"{pair_suffix}: mean {y_label} by valence × {score_label}")
+    ax.set_xlabel("Valence")
+    ax.set_ylabel(y_label)
+    ax.legend(fontsize=9)
+    ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
     plt.show()
