@@ -15,6 +15,7 @@ from sklearn.metrics import (
     accuracy_score, f1_score, mean_absolute_error, mean_squared_error, r2_score,
     ConfusionMatrixDisplay, RocCurveDisplay,
 )
+from src.visualization.io import save_figure
 from sklearn.pipeline import Pipeline
 
 CLASSIFIERS = {
@@ -137,7 +138,7 @@ def run_regression(df, features, y, groups, regressors=None):
     return pd.DataFrame(results).sort_values("r2", ascending=False)
 
 
-def plot_best_classification_binary(df, features, y, groups, results_df, classifiers=None):
+def plot_best_classification_binary(df, features, y, groups, results_df, classifiers=None, save_name=None, save_subfolder="classification/binary", show=True):
     """
     Plot confusion matrix and ROC curve for the best binary model.
     """
@@ -162,12 +163,17 @@ def plot_best_classification_binary(df, features, y, groups, results_df, classif
     axes[1].set_title(f"AUC = {best['auc_roc']:.3f}")
 
     plt.tight_layout()
-    plt.show()
+    if save_name is not None:
+        save_figure(fig, name=save_name, subfolder=save_subfolder, close=not show)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
     print(classification_report(y, y_pred, target_names=["Not depressed", "Depressed"]))
 
 
-def plot_best_classification_multiclass(df, features, y, groups, results_df, labels, classifiers=None):
+def plot_best_classification_multiclass(df, features, y, groups, results_df, labels, classifiers=None, save_name=None, save_subfolder="classification/multiclass", show=True):
     """
     Plot confusion matrix for the best multi-class model.
     """
@@ -184,13 +190,19 @@ def plot_best_classification_multiclass(df, features, y, groups, results_df, lab
     cm = confusion_matrix(y, y_pred)
     ConfusionMatrixDisplay(cm, display_labels=labels).plot(ax=ax, cmap="Blues")
     ax.set_title(f"{best['model']} + {best['feature_set']}")
+    
     plt.tight_layout()
-    plt.show()
+    if save_name is not None:
+        save_figure(fig, name=save_name, subfolder=save_subfolder, close=not show)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
     print(classification_report(y, y_pred, target_names=labels))
 
 
-def plot_best_regression(df, features, y, groups, results_df, score_name="PHQ-9", regressors=None):
+def plot_best_regression(df, features, y, groups, results_df, score_name="PHQ-9", regressors=None, save_name=None, save_subfolder="classification/regression", show=True):
     """
     Plot predicted vs actual and residuals for the best regression model.
     """
@@ -221,12 +233,17 @@ def plot_best_regression(df, features, y, groups, results_df, score_name="PHQ-9"
     axes[1].grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.show()
+    if save_name is not None:
+        save_figure(fig, name=save_name, subfolder=save_subfolder, close=not show)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
     print(f"Best: R2={best['r2']:.3f}, MAE={best['mae']:.2f}")
 
 
-def plot_summary(binary_df, multi_df, reg_df, feature_order, title="Model Performance"):
+def plot_summary(binary_df, multi_df, reg_df, feature_order, title="Model Performance", save_name=None, save_subfolder="classification/summary", show=True):
     """
     3-panel bar chart comparing feature sets across tasks.
     """
@@ -252,10 +269,15 @@ def plot_summary(binary_df, multi_df, reg_df, feature_order, title="Model Perfor
 
     plt.suptitle(title, fontsize=14)
     plt.tight_layout()
-    plt.show()
+    if save_name is not None:
+        save_figure(fig, name=save_name, subfolder=save_subfolder, close=not show)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
-def plot_feature_importance(df, features, y, top_n=20, title="Feature Importance"):
+def plot_feature_importance(df, features, y, top_n=20, title="Feature Importance", save_name=None, save_subfolder="classification/feature_importance", show=True):
     """
     Train Random Forest on all features and plot top N importances.
     """
@@ -275,7 +297,12 @@ def plot_feature_importance(df, features, y, top_n=20, title="Feature Importance
     ax.set_title(title)
     ax.grid(axis="x", alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    if save_name is not None:
+        save_figure(fig, name=save_name, subfolder=save_subfolder, close=not show)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 def build_comparison_table(phq9_results, bdi_results):
     """

@@ -126,10 +126,36 @@ def apply_fdr(summary, score):
     return summary
 
 
-def plot_trajectories(df, summary_df, score_col, score_label, raw_score_col, metrics, pair_filter=None, pair_label=None):
+def _plot_single_trajectory(ax, metric, df, summary_row, score_col, score_label, raw_score_col, median_score, n_sig, p_int):
+    """
+    Render one metric's trajectory onto a given axis
+    """
+    for label, subset, color in [
+        (f"Low {score_label} (<{median_score:.0f})",
+         df[df[raw_score_col] < median_score], "#2196F3"),
+        (f"High {score_label} (>={median_score:.0f})",
+         df[df[raw_score_col] >= median_score], "#F44336"),
+    ]:
+        subset = subset.copy()
+        subset["trial_bin"] = pd.cut(subset["trial_num"], bins=10, labels=False)
+        means = subset.groupby("trial_bin")[metric].mean()
+        sems = subset.groupby("trial_bin")[metric].sem()
+        ax.plot(means.index, means.values, color=color, linewidth=2.5, label=label)
+        ax.fill_between(means.index, means.values - sems.values, means.values + sems.values, color=color, alpha=0.15)
+
+    bg_colors = {3: "#c8e6c9", 2: "#e8f5e9", 1: "#f1f8e9", 0: "white"}
+    ax.set_facecolor(bg_colors[n_sig])
+    star = "***" if p_int < 0.001 else "**" if p_int < 0.01 else "*" if p_int < 0.05 else "n.s."
+    ax.set_title(f"{metric} ({n_sig}/3 sig, interaction {star})")
+    ax.set_xlabel("Trial bin")
+    ax.set_ylabel(metric)
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+
+def plot_trajectories(df, summary_df, score_col, score_label, raw_score_col, metrics, pair_filter=None, pair_label=None, save_individual=False, save_grid=False, show=True):
     """
     Plot metric trajectories over trial bins, split by median depression score.
-    One subplot per metric.
     """
     if pair_filter is not None:
         df = df[df["scene_valence_pair"] == pair_filter]
@@ -143,12 +169,6 @@ def plot_trajectories(df, summary_df, score_col, score_label, raw_score_col, met
         return
 
     metrics = [m for m in metrics if m in rows["metric"].values]
-    n = len(metrics)
-    n_cols = min(3, n)
-    n_rows = (n + n_cols - 1) // n_cols
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(7 * n_cols, 5 * n_rows), squeeze=False)
-    axes = axes.flatten()
-
     interaction_col = f"{score_col}:trial_norm"
     median_score = df[raw_score_col].median()
 
@@ -162,32 +182,46 @@ def plot_trajectories(df, summary_df, score_col, score_label, raw_score_col, met
 
     metrics = sorted(metrics, key=count_sig, reverse=True)
 
-    for idx, metric in enumerate(metrics):
-        ax = axes[idx]
-        for label, subset, color in [
-            (f"Low {score_label} (<{median_score:.0f})",
-             df[df[raw_score_col] < median_score], "#2196F3"),
-            (f"High {score_label} (>={median_score:.0f})",
-             df[df[raw_score_col] >= median_score], "#F44336"),
-        ]:
-            subset = subset.copy()
-            subset["trial_bin"] = pd.cut(subset["trial_num"], bins=10, labels=False)
-            means = subset.groupby("trial_bin")[metric].mean()
-            sems = subset.groupby("trial_bin")[metric].sem()
-            ax.plot(means.index, means.values, color=color, linewidth=2.5, label=label)
-            ax.fill_between(means.index, means.values - sems.values, means.values + sems.values, color=color, alpha=0.15)
-
+    metric_meta = {}
+    for metric in metrics:
         row = rows[rows["metric"] == metric].iloc[0]
-        p_int = row[f"{interaction_col}_pval"]
-        n_sig = count_sig(metric)
-        bg_colors = {3: "#c8e6c9", 2: "#e8f5e9", 1: "#f1f8e9", 0: "white"}
-        ax.set_facecolor(bg_colors[n_sig])
-        star = "***" if p_int < 0.001 else "**" if p_int < 0.01 else "*" if p_int < 0.05 else "n.s."
-        ax.set_title(f"{metric} ({n_sig}/3 sig, interaction {star})")
-        ax.set_xlabel("Trial bin")
-        ax.set_ylabel(metric)
-        ax.legend(fontsize=8)
-        ax.grid(True, alpha=0.3)
+        metric_meta[metric] = {
+            "summary_row": row,
+            "n_sig": count_sig(metric),
+            "p_int": row[f"{interaction_col}_pval"],
+        }
+
+    if save_individual:
+        from src.visualization.io import save_figure
+        subfolder_parts = ["lmm_temporal"]
+        if pair_label:
+            subfolder_parts.append(pair_label)
+        subfolder = "/".join(subfolder_parts)
+
+        for metric in metrics:
+            meta = metric_meta[metric]
+            fig_single, ax_single = plt.subplots(figsize=(7, 5))
+            _plot_single_trajectory(
+                ax_single, metric, df, meta["summary_row"],
+                score_col, score_label, raw_score_col, median_score,
+                meta["n_sig"], meta["p_int"],
+            )
+            fig_single.tight_layout()
+            save_figure(fig_single, name=f"{metric}_{score_col}", subfolder=subfolder, close=True)
+
+    n = len(metrics)
+    n_cols = min(3, n)
+    n_rows = (n + n_cols - 1) // n_cols
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(7 * n_cols, 5 * n_rows), squeeze=False)
+    axes = axes.flatten()
+
+    for idx, metric in enumerate(metrics):
+        meta = metric_meta[metric]
+        _plot_single_trajectory(
+            axes[idx], metric, df, meta["summary_row"],
+            score_col, score_label, raw_score_col, median_score,
+            meta["n_sig"], meta["p_int"],
+        )
 
     for idx in range(n, len(axes)):
         axes[idx].set_visible(False)
@@ -195,4 +229,14 @@ def plot_trajectories(df, summary_df, score_col, score_label, raw_score_col, met
     if pair_label:
         fig.suptitle(f"Trajectories for pair = {pair_label}", fontsize=14)
     plt.tight_layout()
-    plt.show()
+
+    if save_grid:
+        from src.visualization.io import save_figure
+        grid_subfolder = f"lmm_temporal/{pair_label}" if pair_label else "lmm_temporal"
+        grid_name = f"_grid_{score_col}" if pair_label else f"_grid_{score_col}"
+        save_figure(fig, name=grid_name, subfolder=grid_subfolder, close=False)
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)

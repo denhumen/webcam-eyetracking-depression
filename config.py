@@ -1,3 +1,7 @@
+from pathlib import Path
+
+REPORTS_DIR = Path(__file__).parent / "reports" / "figures"
+
 # Volume paths
 VOLUME_BASE = "/Volumes/workspace/anima/anima_volume/raw/dynamic_ab_research"
 FORMS_PATH = f"{VOLUME_BASE}/forms.csv"

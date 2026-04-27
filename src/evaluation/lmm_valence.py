@@ -5,6 +5,7 @@ Mixed-effects models testing depression × valence interactions
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from src.visualization.io import save_figure
 
 import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
@@ -154,13 +155,12 @@ def apply_fdr(summary):
     interaction term. Only one interaction per row in the new per-pair design.
     """
     if "interaction_pval" in summary.columns:
-        _, p_fdr, _, _ = multipletests(summary["interaction_pval"].values,
-                                       method="fdr_bh")
+        _, p_fdr, _, _ = multipletests(summary["interaction_pval"].values, method="fdr_bh")
         summary["interaction_pval_fdr"] = p_fdr
     return summary
 
 
-def plot_pair_valence_effect(df_long, raw_score_col, score_label, pair_suffix, y_label="y"):
+def plot_pair_valence_effect(df_long, raw_score_col, score_label, pair_suffix, y_label="y", metric_name=None, save=False, show=True):
     """
     Plot the 2-valence contrast for a single pair, split by median
     depression score. Shows mean ± SEM per valence × group.
@@ -194,4 +194,10 @@ def plot_pair_valence_effect(df_long, raw_score_col, score_label, pair_suffix, y
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.show()
+    if save:
+        stem = metric_name or y_label
+        save_figure(fig, name=f"{stem}_{raw_score_col}", subfolder=f"lmm_valence/{pair_suffix}", close=not show)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
