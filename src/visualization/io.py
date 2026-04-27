@@ -25,7 +25,7 @@ def save_figure(
     fig: plt.Figure,
     name: str,
     subfolder: str | None = None,
-    formats: tuple[str, ...] = ("png"),
+    format_img: str = "png",
     dpi: int = 200,
     close: bool = False,
 ) -> list[Path]:
@@ -40,10 +40,9 @@ def save_figure(
 
     stem = _sanitise(name)
     written: list[Path] = []
-    for ext in formats:
-        path = out_dir / f"{stem}.{ext}"
-        fig.savefig(path, dpi=dpi, bbox_inches="tight")
-        written.append(path)
+    path = out_dir / f"{stem}.{format_img}"
+    fig.savefig(path, dpi=dpi, bbox_inches="tight")
+    written.append(path)
 
     if close:
         plt.close(fig)

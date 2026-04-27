@@ -35,18 +35,18 @@ def _icc(result):
     except Exception:
         return np.nan
 
-def _pick_reference_and_focal(valences):
+def _pick_reference_and_target(valences):
     """
     For a 2-valence pair, pick which is the reference category and which
-    is the focal (interaction) category
+    is the target (interaction) category.
     """
     if "negative" in valences:
-        focal = "negative"
+        target = "negative"
         reference = next(v for v in valences if v != "negative")
     else:
-        focal = "positive"
+        target = "positive"
         reference = "neutral"
-    return reference, focal
+    return reference, target
 
 
 def melt_one_pair(df_wide, outcome_cols, valences, id_vars):
@@ -105,7 +105,7 @@ def fit_all_per_pair(df_wide, outcomes, score, pairs, id_vars):
 
     for outcome_name, outcome_cols in outcomes.items():
         for pair_name, pair_suffix, valences in pairs:
-            reference, focal = _pick_reference_and_focal(valences)
+            reference, target = _pick_reference_and_target(valences)
 
             sub_wide = df_wide[df_wide["scene_valence_pair"] == pair_name]
             df_long = melt_one_pair(sub_wide, outcome_cols, valences, id_vars)
@@ -120,10 +120,10 @@ def fit_all_per_pair(df_wide, outcomes, score, pairs, id_vars):
 
             interaction_param = (
                 f"{score}:C(valence, Treatment(reference='{reference}'))"
-                f"[T.{focal}]"
+                f"[T.{target}]"
             )
             valence_main = (
-                f"C(valence, Treatment(reference='{reference}'))[T.{focal}]"
+                f"C(valence, Treatment(reference='{reference}'))[T.{target}]"
             )
 
             results[(outcome_name, pair_suffix)] = result
@@ -131,7 +131,7 @@ def fit_all_per_pair(df_wide, outcomes, score, pairs, id_vars):
                 "outcome": outcome_name,
                 "pair_suffix": pair_suffix,
                 "reference": reference,
-                "focal": focal,
+                "target": target,
                 "interaction_coef": result.params.get(interaction_param, np.nan),
                 "interaction_pval": result.pvalues.get(interaction_param, np.nan),
                 "interaction_d": _cohens_d(result, interaction_param),
