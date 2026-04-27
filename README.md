@@ -1,11 +1,14 @@
 # Investigating dynamics of eye-tracking attention indicators for depression assessment
 
-> **Bachelor thesis** · Faculty of Applied Sciences, Ukrainian Catholic University · Lviv, 2026
-> Author: Denis Humeniuk · Supervisor: PhD Anton Popov
+Implementation of experiments described in undergraduate thesis conducted by Denis Humeniuk and supervised by Anton Popov
+
+## Abstract
+
+Soon...
 
 ## Research questions
 
-The thesis tests four hypotheses, organised around two analysis tracks.
+The thesis tests four hypotheses, organized around two analysis tracks.
 
 **Participant-level prediction.**
 
