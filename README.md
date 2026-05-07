@@ -4,7 +4,20 @@ Implementation of experiments described in undergraduate thesis conducted by Den
 
 ## Abstract
 
-Soon...
+Depression is associated with biased visual attention toward negative stimuli, but
+existing evidence comes from small laboratory samples using infrared eye trackers
+and static session-level averages that discard within-session dynamics. This thesis investigates whether dynamic gaze representations — distributional summaries,
+temporal splits and trial-level bias score parameters — improve depression severity
+prediction beyond static features, using 3,492 webcam-based eye-tracking sessions
+from 2,561 participants paired with PHQ-9 and BDI-II scores, the largest webcambased attentional-bias dataset in depression research to date. A reproducible pipeline
+extracts fixation-based metrics from raw gaze recordings and aggregates them into
+four feature families, evaluated on classification and regression tasks with participantgrouped cross-validation; trial-level effects are tested with linear mixed-effects models
+on 162,563 observations. The attentional bias predicted by the laboratory literature
+reproduces on consumer hardware: the negative-versus-positive bias score correlates
+at r = 0.31 with BDI-II, and depression-by-valence interactions reach q < 10−10
+on all maintenance-phase outcomes. However, no dynamic aggregation outperforms
+the static baseline, classification AUC remains around 0.65 and the depression effect
+unexpectedly weakens across the session.
 
 ## Research questions
 
